@@ -165,7 +165,7 @@ let od_300_ms;
 // etterna style only
 let od_miss_ms;
 let od_200_ms;
-const od_300g_ms = 16;
+let od_300g_ms;
 let x_left_memory;
 let y_top_memory;
 let y_bottom_memory;
@@ -333,7 +333,18 @@ const plot_chart = new Chart(ctx, {
 
 const ez = 0b10;
 const hr = 0b10000;
+const v2 = 0x20000000;
 
+
+const mania_300g = 16;
+const mania_300g_v2 = od => {
+	if (od > 5) {
+		return 19.4+((13.9-19.4)*(od-5)/5);
+	}
+	else {
+		return 19.4-((19.4-22.4)*(5-od)/5);
+	}
+}
 const mania_300 = od => 64 - (od * 3);
 const mania_200 = od => 97 - (od * 3);
 const mania_100 = od => 127 - (od * 3);
@@ -345,6 +356,12 @@ const mania_ez_calc = value => Math.floor(value * 1.4);
 
 const update_od_ms = (od, mods_num) => {
 	if ((mods_num & hr) == hr) {
+		if((mods_num & v2) == v2){
+			od_300g_ms = mania_hr_calc(mania_300g_v2(od));
+		}
+		else{
+			od_300g_ms = mania_hr_calc(mania_300g);
+		}
 		od_miss_ms = mania_hr_calc(mania_miss(od));
 		od_50_ms = mania_hr_calc(mania_50(od));
 		od_100_ms = mania_hr_calc(mania_100(od));
@@ -352,6 +369,12 @@ const update_od_ms = (od, mods_num) => {
 		od_300_ms = mania_hr_calc(mania_300(od));
 	}
 	else if ((mods_num & ez) == ez) {
+		if((mods_num & v2) == v2){
+			od_300g_ms = mania_ez_calc(mania_300g_v2(od));
+		}
+		else{
+			od_300g_ms = mania_ez_calc(mania_300g);
+		}
 		od_miss_ms = mania_ez_calc(mania_miss(od));
 		od_50_ms = mania_ez_calc(mania_50(od));
 		od_100_ms = mania_ez_calc(mania_100(od));
@@ -359,6 +382,9 @@ const update_od_ms = (od, mods_num) => {
 		od_300_ms = mania_ez_calc(mania_300(od));
 	}
 	else {
+		if((mods_num & v2) == v2){
+			od_300g_ms = mania_300g_v2(od);
+		}
 		od_miss_ms = mania_miss(od);
 		od_50_ms = mania_50(od);
 		od_100_ms = mania_100(od);
@@ -392,8 +418,7 @@ socket.onmessage = async event => {
 	//console.time("messageEvent");
 
 	const osu_status = JSON.parse(event.data);
-
-	const audio_path = "http://127.0.0.1:24050/Songs/" + encodeURIComponent(osu_status.menu.bm.path.folder + "/" + osu_status.menu.bm.path.audio);
+	const audio_path = "http://127.0.0.1:24050/Songs/" + encodeURIComponent(osu_status.menu.bm.path.folder + "/" + osu_status.menu.bm.path.audio);;
 	if (audio_path != current_audio_path && audio_base_plot) {
 		try {
 			current_audio_drain = await get_audio_end_drain(audio_path) * 1000;
